@@ -48,7 +48,6 @@ export default function DonorPage() {
       latitude: lat,
       longitude: lng,
     }))
-    setStep('success')
     submitForm(lat, lng)
   }
 
@@ -68,16 +67,31 @@ export default function DonorPage() {
         }),
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to register as donor')
+      const responseText = await response.text()
+      console.log('profiles POST response', { status: response.status, responseText })
+      let data: any = null
+      if (responseText) {
+        try {
+          data = JSON.parse(responseText)
+        } catch (parseError) {
+          throw new Error(`Server returned invalid JSON: ${responseText}`)
+        }
       }
 
-      const data = await response.json()
+      if (!response.ok) {
+        const message = data?.error || response.statusText || 'Failed to register as donor'
+        throw new Error(message)
+      }
+
+      if (!data || !data.id) {
+        throw new Error('Registration succeeded but server returned no donor ID.')
+      }
+
       setDonorId(data.id)
       setStep('success')
     } catch (error) {
       console.error('Error:', error)
-      alert('Failed to register. Please try again.')
+      alert(error instanceof Error ? error.message : 'Failed to register. Please try again.')
     } finally {
       setIsLoading(false)
     }

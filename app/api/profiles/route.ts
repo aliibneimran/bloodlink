@@ -11,8 +11,8 @@ function getSupabaseClient() {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = getSupabaseClient()
   try {
+    const supabase = getSupabaseClient()
     const body = await request.json()
     const { name, phone, blood_group, is_donor, latitude, longitude } = body
 

@@ -60,9 +60,17 @@ export default function RequestPage() {
     setIsLoading(true)
     try {
       // First, create or get requester profile
-      let requesterData = await fetch('/api/profiles?phone=' + formData.requester_phone)
-        .then((r) => r.json())
-        .catch(() => null)
+      let requesterData: any = null
+      try {
+        const profileRes = await fetch('/api/profiles?phone=' + encodeURIComponent(formData.requester_phone))
+        if (profileRes.ok) {
+          requesterData = await profileRes.json()
+        } else {
+          requesterData = null
+        }
+      } catch (e) {
+        requesterData = null
+      }
 
       if (!requesterData) {
         // Create new requester profile

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import type { BloodRequest, Donor } from '@/lib/types'
 import { formatDistanceToNow } from 'date-fns'
+import { supabase } from '@/lib/supabase/client'
 
 export default function TrackingPage() {
   const [requestId, setRequestId] = useState('')
@@ -39,7 +40,14 @@ export default function TrackingPage() {
 
     setIsSearching(true)
     try {
-      const response = await fetch(`/api/blood-requests?status=pending`)
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const authHeaders = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {}
+
+      const response = await fetch(`/api/blood-requests?status=pending`, { headers: authHeaders })
       const data = await response.json()
       const found = data.find((r: any) => r.id === requestId)
 
@@ -59,7 +67,8 @@ export default function TrackingPage() {
         const lat = parseFloat(coords[1])
 
         const donorResponse = await fetch(
-          `/api/donors/nearby?lat=${lat}&lng=${lng}&blood_type=${found.patient_blood_group}&radius=5`
+          `/api/donors/nearby?lat=${lat}&lng=${lng}&blood_type=${found.patient_blood_group}&radius=5`,
+          { headers: authHeaders }
         )
         const donorData = await donorResponse.json()
 
@@ -90,9 +99,12 @@ export default function TrackingPage() {
 
     setIsLoading(true)
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       const response = await fetch('/api/blood-requests/accept', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
         body: JSON.stringify({
           request_id: request.id,
           donor_id: currentProfile.id,
@@ -123,9 +135,12 @@ export default function TrackingPage() {
 
     setIsLoading(true)
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       const response = await fetch('/api/blood-requests/cancel', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
         body: JSON.stringify({
           request_id: request.id,
           donor_id: currentProfile.id,

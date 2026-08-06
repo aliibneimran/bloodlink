@@ -170,10 +170,10 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE blood_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cancelled_logs ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies for profiles (allow public read, auth insert/update own)
+-- RLS Policies for profiles (allow public read/insert, auth update own)
 CREATE POLICY "Allow public read" ON profiles FOR SELECT USING (true);
-CREATE POLICY "Allow authenticated insert" ON profiles FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow update own profile" ON profiles FOR UPDATE USING (true) WITH CHECK (true);
+CREATE POLICY "Allow public insert" ON profiles FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update" ON profiles FOR UPDATE USING (true) WITH CHECK (true);
 
 -- RLS Policies for blood_requests (allow public read, auth insert/update)
 CREATE POLICY "Allow public read requests" ON blood_requests FOR SELECT USING (true);

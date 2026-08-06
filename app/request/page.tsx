@@ -17,6 +17,8 @@ import {
 import { Heart, CheckCircle, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { BLOOD_TYPES, REQUEST_TYPES } from '@/lib/constants'
+import { buildAuthPassword } from '@/lib/auth/bootstrap'
+import { supabase } from '@/lib/supabase/client'
 
 type Step = 'requester' | 'hospital' | 'location' | 'success'
 
@@ -73,7 +75,7 @@ export default function RequestPage() {
       }
 
       if (!requesterData) {
-        // Create new requester profile
+        // Create new requester profile and auto-auth account
         const profileRes = await fetch('/api/profiles', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -89,9 +91,16 @@ export default function RequestPage() {
       }
 
       // Create blood request
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const authHeaders = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {}
+
       const requestRes = await fetch('/api/blood-requests', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({
           requester_id: requesterData.id,
           patient_blood_group: formData.patient_blood_group,
@@ -105,11 +114,39 @@ export default function RequestPage() {
 
       if (!requestRes.ok) throw new Error('Failed to create blood request')
       const requestData = await requestRes.json()
+      if (requestData?.auth?.userId) {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session && requestData?.auth?.email && !requestData?.auth?.authError) {
+          try {
+            await supabase.auth.signInWithPassword({
+              email: requestData.auth.email,
+              password: buildAuthPassword(formData.requester_phone),
+            })
+          } catch (authErr) {
+            console.error('Auto sign-in failed:', authErr)
+          }
+        }
+      }
+
+      if (requestData?.auth?.authError) {
+        console.warn('Auth setup failed:', requestData.auth.authError)
+      }
       setRequestId(requestData.id)
       setStep('success')
     } catch (error) {
       console.error('Error:', error)
-      alert('Failed to create request. Please try again.')
+      
+      let message = 'Failed to create request. Please try again.'
+      
+      if (error instanceof Error) {
+        message = error.message
+        
+        if (message.includes('RLS_POLICY_ERROR') || message.includes('migration script')) {
+          message = `${message}\n\nPlease run the migration script at lib/migrations/001-fix-rls-policies.sql in your Supabase SQL Editor and try again.`
+        }
+      }
+      
+      alert(message)
     } finally {
       setIsLoading(false)
     }

@@ -1,9 +1,44 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Droplet } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { supabase } from '@/lib/supabase/client'
 
 export function Header() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  useEffect(() => {
+    let active = true
+
+    const loadSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (active) {
+        setIsAuthenticated(Boolean(session?.user))
+      }
+    }
+
+    void loadSession()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) {
+        setIsAuthenticated(Boolean(session?.user))
+      }
+    })
+
+    return () => {
+      active = false
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -25,6 +60,17 @@ export function Header() {
               Dashboard
             </Link>
           </nav>
+          {isAuthenticated ? (
+            <Button variant="outline" size="sm" onClick={handleSignOut}>
+              Logout
+            </Button>
+          ) : (
+            <Link href="/dashboard">
+              <Button variant="outline" size="sm">
+                Login
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </header>

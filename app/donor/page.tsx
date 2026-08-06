@@ -17,6 +17,8 @@ import {
 import { Droplet, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 import { BLOOD_TYPES } from '@/lib/constants'
+import { supabase } from '@/lib/supabase/client'
+import { buildAuthPassword } from '@/lib/auth/bootstrap'
 
 type Step = 'info' | 'location' | 'success'
 
@@ -54,7 +56,7 @@ export default function DonorPage() {
   const submitForm = async (lat?: number, lng?: number) => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/profiles', {
+      const profileRes = await fetch('/api/profiles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -67,31 +69,60 @@ export default function DonorPage() {
         }),
       })
 
-      const responseText = await response.text()
-      console.log('profiles POST response', { status: response.status, responseText })
-      let data: any = null
-      if (responseText) {
+      const profileText = await profileRes.text()
+      let response: any = null
+      if (profileText) {
         try {
-          data = JSON.parse(responseText)
+          response = JSON.parse(profileText)
         } catch (parseError) {
-          throw new Error(`Server returned invalid JSON: ${responseText}`)
+          throw new Error(`Server returned invalid JSON: ${profileText}`)
         }
       }
 
-      if (!response.ok) {
-        const message = data?.error || response.statusText || 'Failed to register as donor'
+      if (!profileRes.ok) {
+        const message = response?.error || profileRes.statusText || 'Failed to register as donor'
         throw new Error(message)
       }
 
+      const data = response
+
+
+
       if (!data || !data.id) {
         throw new Error('Registration succeeded but server returned no donor ID.')
+      }
+
+      if (data?.auth?.email && !data?.auth?.authError) {
+        try {
+          await supabase.auth.signInWithPassword({
+            email: data.auth.email,
+            password: buildAuthPassword(formData.phone),
+          })
+        } catch (authErr) {
+          console.error('Auto sign-in failed:', authErr)
+        }
+      }
+
+      if (data?.auth?.authError) {
+        console.warn('Auth setup failed:', data.auth.authError)
       }
 
       setDonorId(data.id)
       setStep('success')
     } catch (error) {
       console.error('Error:', error)
-      alert(error instanceof Error ? error.message : 'Failed to register. Please try again.')
+      
+      let message = 'Failed to register. Please try again.'
+      
+      if (error instanceof Error) {
+        message = error.message
+        
+        if (message.includes('RLS_POLICY_ERROR') || message.includes('migration script')) {
+          message = `${message}\n\nPlease run the migration script and try again.`
+        }
+      }
+      
+      alert(message)
     } finally {
       setIsLoading(false)
     }

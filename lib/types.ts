@@ -5,6 +5,7 @@ export type RequestStatus = 'pending' | 'accepted' | 'completed' | 'cancelled';
 
 export interface Profile {
   id: string;
+  auth_user_id?: string | null;
   name: string;
   phone: string;
   blood_group: BloodGroup;
@@ -22,11 +23,22 @@ export interface BloodRequest {
   request_type: RequestType;
   required_date: string;
   hospital_name: string;
-  hospital_location: { lat: number; lon: number };
+  hospital_location: { lat: number; lon: number } | string | null;
   status: RequestStatus;
   accepted_by_donor_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface Donor {
+  id: string;
+  name: string;
+  phone: string;
+  blood_group: BloodGroup;
+  status: DonorStatus;
+  lat: number;
+  lng: number;
+  distance_m: number;
 }
 
 export interface CancelledLog {

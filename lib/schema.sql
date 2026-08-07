@@ -16,6 +16,7 @@ CREATE TYPE request_status_enum AS ENUM ('pending', 'accepted', 'completed', 'ca
 -- Profiles table for donors and requesters
 CREATE TABLE profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  auth_user_id UUID UNIQUE,
   name TEXT NOT NULL,
   phone TEXT UNIQUE NOT NULL,
   blood_group blood_group_enum,

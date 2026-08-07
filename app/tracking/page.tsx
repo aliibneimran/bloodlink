@@ -43,7 +43,7 @@ export default function TrackingPage() {
       const {
         data: { session },
       } = await supabase.auth.getSession()
-      const authHeaders = session?.access_token
+      const authHeaders: Record<string, string> = session?.access_token
         ? { Authorization: `Bearer ${session.access_token}` }
         : {}
 
@@ -279,16 +279,16 @@ export default function TrackingPage() {
           <LiveTrackingMap
             donors={donors}
             hospitalLat={
-              request.hospital_location
+              typeof request.hospital_location === 'string'
                 ? parseFloat(request.hospital_location.split('(')[1].split(')')[0].split(' ')[1])
-                : 0
+                : request.hospital_location?.lat ?? 0
             }
             hospitalLng={
-              request.hospital_location
+              typeof request.hospital_location === 'string'
                 ? parseFloat(request.hospital_location.split('(')[1].split(')')[0].split(' ')[0])
-                : 0
+                : request.hospital_location?.lon ?? 0
             }
-            acceptedDonorId={request.accepted_by_donor_id}
+            acceptedDonorId={request.accepted_by_donor_id ?? undefined}
             radius={5000}
           />
         </div>

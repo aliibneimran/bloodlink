@@ -71,7 +71,7 @@ export default function DashboardPage() {
           data: { session },
         } = await supabase.auth.getSession()
 
-        const response = await fetch('/api/blood-requests', {
+        const response = await fetch('/api/blood-requests?my=true', {
           headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
         })
 

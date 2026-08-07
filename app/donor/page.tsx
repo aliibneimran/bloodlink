@@ -40,8 +40,8 @@ export default function DonorPage() {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleBloodGroupChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, blood_group: value }))
+  const handleBloodGroupChange = (value: string | null) => {
+    setFormData((prev) => ({ ...prev, blood_group: value ?? '' }))
   }
 
   const handleLocationSelect = (lat: number, lng: number) => {

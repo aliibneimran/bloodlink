@@ -90,12 +90,20 @@ export default function RequestPage() {
         requesterData = await profileRes.json()
       }
 
-      // Create blood request
       const {
         data: { session },
       } = await supabase.auth.getSession()
-      const authHeaders = session?.access_token
-        ? { Authorization: `Bearer ${session.access_token}` }
+
+      if (!session && requesterData?.auth?.email && !requesterData?.auth?.authError) {
+        await supabase.auth.signInWithPassword({
+          email: requesterData.auth.email,
+          password: buildAuthPassword(formData.requester_phone),
+        })
+      }
+
+      const authSession = await supabase.auth.getSession()
+      const authHeaders: Record<string, string> = authSession.data.session?.access_token
+        ? { Authorization: `Bearer ${authSession.data.session.access_token}` }
         : {}
 
       const requestRes = await fetch('/api/blood-requests', {
@@ -257,7 +265,7 @@ export default function RequestPage() {
                 </Label>
                 <Select
                   value={formData.patient_blood_group}
-                  onValueChange={(value) => handleSelectChange(value, 'patient_blood_group')}
+                  onValueChange={(value) => handleSelectChange(value ?? '', 'patient_blood_group')}
                 >
                   <SelectTrigger id="blood-group" className="mt-2">
                     <SelectValue placeholder="Select blood type" />
@@ -278,7 +286,7 @@ export default function RequestPage() {
                 </Label>
                 <Select
                   value={formData.request_type}
-                  onValueChange={(value) => handleSelectChange(value, 'request_type')}
+                  onValueChange={(value) => handleSelectChange(value ?? '', 'request_type')}
                 >
                   <SelectTrigger id="request-type" className="mt-2">
                     <SelectValue placeholder="Select request type" />
